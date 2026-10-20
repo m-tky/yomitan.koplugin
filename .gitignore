@@ -1,0 +1,4 @@
+/dist/
+/tools/generated-fixtures/
+__pycache__/
+*.pyc

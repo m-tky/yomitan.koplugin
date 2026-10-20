@@ -1,0 +1,72 @@
+name: Build preconverted JMdict index
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Upstream release: latest or YYYY-MM-DD"
+        required: true
+        default: latest
+        type: string
+      publish:
+        description: "Explicitly publish/update the jmdict-latest data release"
+        required: true
+        default: false
+        type: boolean
+permissions:
+  contents: read
+concurrency:
+  group: jmdict-index-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build-index:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test portable tooling (offline fixtures)
+        run: python3 -m unittest discover -s tools/tests -v
+      - name: Download, verify and convert upstream JMdict
+        env:
+          JMDICT_RELEASE: ${{ inputs.release }}
+        run: python3 tools/build-jmdict-index.py --release "$JMDICT_RELEASE" --output dist/JMdict-ja-terms.sqlite.zip
+      - name: Check archive and checksum
+        working-directory: dist
+        run: |
+          sha256sum --check JMdict-ja-terms.sqlite.zip.sha256
+          unzip -t JMdict-ja-terms.sqlite.zip
+      - name: Save separate dictionary ZIP (no public release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: JMdict-sqlite-index-${{ github.run_id }}
+          path: |
+            dist/JMdict-ja-terms.sqlite.zip
+            dist/JMdict-ja-terms.sqlite.zip.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+  publish-index:
+    if: inputs.publish
+    needs: build-index
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: JMdict-sqlite-index-${{ github.run_id }}
+          path: dist
+      - name: Publish separately from plugin releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if ! gh release view jmdict-latest >/dev/null 2>&1; then
+            gh release create jmdict-latest --title "Preconverted JMdict index" --target "$GITHUB_SHA" --latest=false \
+              --notes "CC BY-SA 4.0 dictionary data, separately licensed from the plugin. Attribution, source provenance and licence documents are included in the ZIP."
+          fi
+          gh release edit jmdict-latest --latest=false
+          gh release upload jmdict-latest dist/JMdict-ja-terms.sqlite.zip dist/JMdict-ja-terms.sqlite.zip.sha256 --clobber
