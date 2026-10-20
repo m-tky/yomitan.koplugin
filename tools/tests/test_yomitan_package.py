@@ -71,6 +71,9 @@ class PackageTests(unittest.TestCase):
         self.assertNotIn("function Importer.prepare", importer)
         self.assertNotIn("CREATE TABLE", importer)
         self.assertIn("yomitan/bundle.lua", PACKAGE.REQUIRED)
+        self.assertFalse((SOURCE / "yomitan/render.lua").exists())
+        self.assertNotIn("function Database:glossary", (SOURCE / "yomitan/database.lua").read_text())
+        self.assertNotIn("function Parser:each", (SOURCE / "yomitan/jsonstream.lua").read_text())
 
     def test_source_has_storefront_metadata(self):
         meta = (SOURCE / "_meta.lua").read_text()

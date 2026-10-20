@@ -57,7 +57,7 @@ function Automatic.start(plugin)
         clear()
         plugin.automatic_failed = true
         require("logger").warn("Yomitan automatic verification:", err)
-        notice(plugin, "Japanese search assistance could not be prepared. Ordinary dictionary lookup is still available. Long-press its switch for details.")
+        notice(plugin, "Yomitan unavailable. Dictionary lookup still works.")
     end
     local ok, job = pcall(Job.start, plugin.root, plugin.path, "", "verify", ids, {
         background = true,
@@ -76,7 +76,7 @@ function Automatic.start(plugin)
             if table.concat(chosen, ":") == table.concat(ids, ":") then
                 G_reader_settings:saveSetting("yomitan_dictionary_ids", ids)
             end
-            notice(plugin, "Japanese search assistance is ready.")
+            notice(plugin, "Yomitan ready.")
         end,
         error = failed,
         cancelled = function()
@@ -86,7 +86,7 @@ function Automatic.start(plugin)
     })
     if ok then
         plugin.setup_job = job
-        notice(plugin, "Preparing Japanese search assistance in the background. You can continue reading; ordinary dictionary lookup remains available.")
+        notice(plugin, "Preparing Yomitan…")
     else failed(job) end
 end
 

@@ -1,6 +1,4 @@
 -- Shared immutable-bundle hashing, space checks and verification. No dictionary conversion.
-local Catalog = require("yomitan/catalog")
-local ffiUtil = require("ffi/util")
 local lfs = require("libs/libkoreader-lfs")
 local sha = require("ffi/sha2")
 local Importer = {}
@@ -28,7 +26,7 @@ function Importer.hash(path, progress)
 end
 
 function Importer.space(path, payload, available_fn)
-    local _, _, available = (available_fn or ffiUtil.df)(path)
+    local _, _, available = (available_fn or require("ffi/util").df)(path)
     assert(type(available) == "number", "Unable to check free space for index installation")
     assert(available >= 24 * 1024^2 + (payload or 0), "Not enough free space (24 MiB reserve required)")
 end
@@ -41,6 +39,7 @@ function Importer.proof(path, manifest)
 end
 
 function Importer.verify(root, ids, progress)
+    local Catalog = require("yomitan/catalog")
     local by_id, proofs = {}, {}
     for _, item in ipairs(Catalog.scan(root)) do by_id[item.id] = item end
     assert(type(ids) == "table" and #ids <= 8, "Invalid enabled dictionary list")

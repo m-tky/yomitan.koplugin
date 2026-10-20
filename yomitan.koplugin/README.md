@@ -18,11 +18,9 @@ Storefront installation does not supply or patch those hooks. No MeCab is used.
    **Agree and download**. This explicitly contacts GitHub, downloads a
    **preconverted SQLite index ZIP**, verifies its published size/SHA-256, and
    extracts and checks it in a cancellable bundled LuaJIT worker.
-4. After verification, confirm **Enable (keep long-press settings)** or
-   **Enable + direct lookup**. The latter also enables direct dictionary opening
-   after a word long-press. The dialog warns before globally disabling external
-   dictionary lookup. **Keep installed without enabling** leaves lookup settings
-   unchanged.
+4. After verification, choose **Enable**. Long-press behavior is left unchanged.
+   The dialog warns before globally disabling external dictionary lookup.
+   **Not now** keeps the index installed without changing lookup settings.
 
 The device does **not** convert dictionaries. Original Yomitan v3 term ZIPs are no
 longer accepted; the old on-device conversion pipeline has been removed. Python

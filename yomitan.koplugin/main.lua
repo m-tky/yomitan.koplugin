@@ -135,7 +135,7 @@ function Yomitan:showDetails()
     local function close() UIManager:close(dialog); self.setup_dialog = nil end
     dialog = ButtonDialog:new{
         dismissable = false,
-        title = _("Yomitan") .. "\n" .. _("The search index is selected and verified automatically. Definitions come from StarDict."),
+        title = _("Yomitan"),
         buttons = {
             {{text = _("Add search index"), callback = function() close(); Setup.show(self) end}},
             {{text = _("Sources and licences"), callback = function() close(); self:showSearchSources() end}},
@@ -149,7 +149,7 @@ end
 function Yomitan:addToMainMenu(menu_items)
     menu_items.yomitan_settings = {
         text = _("Yomitan"), sorting_hint = "more_tools",
-        help_text = _("Recognize Japanese words with Yomitan; show definitions from StarDict. Long-press for index import and source information."),
+        help_text = _("Japanese word selection. Long-press for setup and sources."),
         hold_callback = function() self:showDetails() end,
         hold_keep_menu_open = false,
         sub_item_table = {

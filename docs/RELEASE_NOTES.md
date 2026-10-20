@@ -1,24 +1,24 @@
-## Experimental fork-only integration
+## v0.1.1
 
-**Not compatible with stock KOReader.** Requires custom dictionary-provider,
-search-candidate and selection hooks from the KOReader-tategumi integration work.
-These hooks are not yet available in a supported public KOReader build. Installing
-this ZIP through Storefront does not install or patch them. This initial release
-is for integration testing, not general stock-KOReader deployment.
+- Shorter setup, activation, progress and update messages; detailed information
+  remains available under Sources and licences.
+- One Enable action; existing long-press settings are no longer changed.
+- Removed unused definition rendering, glossary retrieval and old term-streaming code.
+- Hashing and plugin update checks no longer load SQLite through shared helpers;
+  index verification loads it when needed.
 
-- Japanese word selection and base-form/reading candidates using pinned Yomitan
-  transforms; popup definitions remain exclusively in enabled StarDict dictionaries.
-- Preconverted JMdict SQLite ZIP acquisition, bounded streaming extraction,
-  integrity/schema checks, immutable publication and explicit activation confirmation.
-- Persisted verification receipts; no on-device dictionary conversion.
-- Storefront/App Store-compatible metadata and single-folder plugin ZIP.
-- Confirmed plugin self-updates with backup; settings and indexes remain external.
+Existing index files remain compatible. No dictionary rebuild or download is
+required for this update. Runtime regression tests (89) and portable tooling tests
+(26) passed before publication.
 
-Install `yomitan.koplugin.zip` below KOReader's `plugins/` directory and restart.
-`jmdict-latest` is a separate CC BY-SA 4.0 data release, not a plugin release;
-its ZIP includes Breen/EDRDG attribution, source provenance and licence documents.
-The plugin code is GPL-3.0-or-later and retains Yomitan/Yomichan notices.
+### Compatibility
 
-Portable tooling tests, isolated native regression suites and Paperwhite 2
-isolated package extraction/verification have passed. Official Storefront catalog
-submission and a Storefront-managed installation have not been performed.
+**Experimental and not compatible with stock KOReader.** Requires custom
+provider/candidate/selection hooks that are not yet available in a supported public
+KOReader build. Storefront installation does not install or patch those hooks.
+Official Storefront catalog inclusion has not been verified.
+
+Install `yomitan.koplugin.zip` under KOReader's `plugins/` directory and restart.
+`jmdict-latest` is a separate data-only release, not a plugin package. Plugin code
+is GPL-3.0-or-later; JMdict data is CC BY-SA 4.0 with Breen/EDRDG attribution and
+licence documents included in the data ZIP.

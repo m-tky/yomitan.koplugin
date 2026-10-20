@@ -106,7 +106,7 @@ function Job.start(root, plugin_root, source, mode, ids, callbacks)
     self.pid = pid
     if not self.callbacks.background then
         self.dialog = ButtonDialog:new{
-            title = (callbacks.title or "Setting up Yomitan dictionaries…") .. "\nPreparation in progress.", dismissable = false,
+            title = callbacks.title or "Preparing Yomitan…", dismissable = false,
             buttons = {{{text = "Cancel", callback = function() self:cancel() end}}},
         }
     end
@@ -130,7 +130,7 @@ function Job:cancel(silent)
     end
     if self.dialog then
         if silent then UIManager:close(self.dialog); self.dialog = nil
-        else self.dialog:setTitle(self.callbacks.cancel_title or "Cancelling import…\nExisting dictionaries and settings will be kept.") end
+        else self.dialog:setTitle(self.callbacks.cancel_title or "Cancelling…") end
     end
 end
 
@@ -140,7 +140,7 @@ function Job:step()
         if self.dialog and not self.cancelled then
             local progress = Job.read(self.stage .. "/progress.json")
             if progress and type(progress.phase) == "string" then
-                local title = (self.callbacks.title or "Setting up Yomitan dictionaries…") .. "\n" .. progress.phase .. ": " .. tostring(progress.amount or "")
+                local title = (self.callbacks.title or "Preparing Yomitan…") .. "\n" .. progress.phase .. ": " .. tostring(progress.amount or "")
                 if title ~= self.last_title then self.dialog:setTitle(title); self.last_title = title end
             end
         end

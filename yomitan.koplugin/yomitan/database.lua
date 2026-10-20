@@ -131,15 +131,6 @@ function Database:forms(entry)
     return forms
 end
 
-function Database:glossary(entry)
-    local stmt = self:statement("glossary", "SELECT CASE WHEN length(CAST(glossary_json AS BLOB))<=4194304 THEN glossary_json ELSE NULL END FROM entries WHERE id=?")
-    stmt:bind(entry.id)
-    local row = stmt:step()
-    stmt:reset()
-    assert(row and type(row[1]) == "string", "Missing or oversized dictionary definition")
-    return decode(row[1])
-end
-
 function Database:close()
     if self.conn then self.conn:close(); self.conn = nil; self.statements = {} end
 end

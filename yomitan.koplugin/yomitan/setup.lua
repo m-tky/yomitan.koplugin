@@ -2,6 +2,7 @@ local ButtonDialog = require("ui/widget/buttondialog")
 local Catalog = require("yomitan/catalog")
 local InfoMessage = require("ui/widget/infomessage")
 local Job = require("yomitan/importjob")
+local Jmdict = require("yomitan/jmdict")
 local PathChooser = require("ui/widget/pathchooser")
 local UIManager = require("ui/uimanager")
 local lfs = require("libs/libkoreader-lfs")
@@ -26,7 +27,7 @@ local function installed(plugin, fallback)
     return ids
 end
 
-function Setup.complete(plugin, ids, direct)
+function Setup.complete(plugin, ids)
     -- Called only after an explicit final confirmation and worker validation.
     assert(not plugin.setup_closed and #ids > 0 and #ids <= 8, "Invalid setup activation")
     local by_id = {}
@@ -40,7 +41,6 @@ function Setup.complete(plugin, ids, direct)
     G_reader_settings:saveSetting("yomitan_dictionary_ids", ids)
     G_reader_settings:saveSetting("dictionary_provider", plugin.provider_id)
     if G_reader_settings:isTrue("external_dict_lookup") then G_reader_settings:saveSetting("external_dict_lookup", false) end
-    if direct then G_reader_settings:saveSetting("highlight_action_on_single_word", false) end
     G_reader_settings:saveSetting("yomitan_setup_version", 1)
     G_reader_settings:delSetting("yomitan_setup_deferred")
     plugin.setup_proofs = nil
@@ -49,28 +49,23 @@ end
 function Setup.confirm(plugin, ids)
     if plugin.setup_closed then return end
     local external = G_reader_settings:isTrue("external_dict_lookup")
-        and "\nEnabling Yomitan will turn off external dictionary lookup (a global setting)." or ""
+        and "\n" .. _("External lookup will be turned off for all books.") or ""
     local dialog
     local function close()
         UIManager:close(dialog)
         plugin.setup_dialog = nil
     end
-    local function enable(direct)
+    local function enable()
         close()
-        local ok, err = pcall(Setup.complete, plugin, ids, direct)
-        message(plugin, ok and "Yomitan search assistance is ready. Long-press the first character of a Japanese word. Definitions come from your enabled StarDict dictionaries."
-            or ("Unable to activate dictionaries; prior lookup settings were kept.\n" .. tostring(err)))
+        local ok, err = pcall(Setup.complete, plugin, ids)
+        message(plugin, ok and _("Yomitan enabled.") or (_("Unable to enable Yomitan.") .. "\n" .. tostring(err)))
     end
     dialog = ButtonDialog:new{
-        title = "Search indexes imported and verified.\nEnable Yomitan for Japanese word selection and StarDict search assistance? Yomitan definitions are never displayed. Existing dictionary files and StarDict settings are retained. " ..
-            "Missing/invalid previous Yomitan selections are omitted.\n" ..
-            (#ids <= 8 and "You can also enable direct dictionary opening after a word long-press." or
-                "More than eight dictionaries would be enabled. Install only, then adjust Enabled dictionaries in the menu.") .. external,
+        title = (#ids <= 8 and _("Index ready. Enable Yomitan?") or _("Too many indexes (maximum 8).")) .. external,
         dismissable = false,
         buttons = {
-            {{text = _("Enable + direct lookup"), enabled = #ids > 0 and #ids <= 8, callback = function() enable(true) end}},
-            {{text = _("Enable (keep long-press settings)"), enabled = #ids > 0 and #ids <= 8, callback = function() enable(false) end}},
-            {{text = _("Keep installed without enabling"), callback = function()
+            {{text = _("Enable"), enabled = #ids > 0 and #ids <= 8, callback = enable}},
+            {{text = _("Not now"), callback = function()
                 close()
                 G_reader_settings:saveSetting("yomitan_setup_version", 1)
                 G_reader_settings:delSetting("yomitan_setup_deferred")
@@ -114,11 +109,11 @@ end
 
 function Setup.start(plugin, source, mode)
     if plugin.setup_closed or plugin.setup_job then return end
-    if not plugin.compatible then message(plugin, "This plugin needs the dictionary provider hooks in the KOReader fork."); return end
+    if not plugin.compatible then message(plugin, _("This KOReader build is not supported.")); return end
     util.makePath(plugin.root)
     Job.recover(plugin.root)
     local ids = installed(plugin, mode == "verify")
-    if mode == "verify" and #ids == 0 then message(plugin, "No installed indexes found. Download JMdict or select a preconverted index ZIP."); return end
+    if mode == "verify" and #ids == 0 then message(plugin, _("No index installed. Download JMdict or select an index ZIP.")); return end
     G_reader_settings:saveSetting("yomitan_setup_deferred", true)
     plugin:closeDatabases()
     local ok, job = pcall(Job.start, plugin.root, plugin.path, source, mode, ids, {
@@ -128,11 +123,11 @@ function Setup.start(plugin, source, mode)
         end,
         error = function(err)
             plugin.setup_job = nil
-            message(plugin, "Yomitan setup failed. Existing dictionaries/settings were kept.\n\n" .. err)
+            message(plugin, _("Yomitan setup failed.") .. "\n\n" .. err)
         end,
         cancelled = function()
             plugin.setup_job = nil
-            message(plugin, "Yomitan setup cancelled. Existing dictionaries/settings were kept. You can retry from the Yomitan menu.")
+            message(plugin, _("Yomitan setup cancelled."))
         end,
     })
     if ok then plugin.setup_job = job else message(plugin, tostring(job)) end
@@ -143,17 +138,12 @@ function Setup.download(plugin)
     local dialog
     local function close() UIManager:close(dialog); plugin.setup_dialog = nil end
     dialog = ButtonDialog:new{
-        title = "Download a preconverted JMdict index from m-tky/yomitan.koplugin on GitHub?\n\n" ..
-            "Copyright Jim Breen / EDRDG. Data: CC BY-SA 4.0 (not the plugin's GPL). " ..
-            "The ZIP already contains the SQLite index; no dictionary conversion runs on this device. Definitions still come from StarDict. " ..
-            "Internet and curl are required; GitHub receives the request. Extraction and verification can take time and can be cancelled. " ..
-            "Source/licence documents are saved on the device. Use this action again to update data. " ..
-            "Review Sources and licence before agreeing.",
+        title = _("Download JMdict from GitHub?") .. "\nJim Breen / EDRDG · CC BY-SA 4.0",
         dismissable = false,
         buttons = {
             {{text = _("Sources and licence"), callback = function()
                 UIManager:show(require("ui/widget/textviewer"):new{
-                    title = _("JMdict sources and licence"), text = require("yomitan/jmdict").notice})
+                    title = _("JMdict sources and licence"), text = Jmdict.notice})
             end}},
             {{text = _("Agree and download"), callback = function() close(); Setup.start(plugin, "", "download-jmdict") end}},
             {{text = _("Cancel"), callback = close}},
@@ -187,7 +177,7 @@ end
 
 function Setup.show(plugin)
     if plugin.setup_closed or plugin.setup_job or plugin.setup_dialog or plugin.setup_chooser then return end
-    if not plugin.compatible then message(plugin, "This plugin needs the dictionary provider hooks in the KOReader fork."); return end
+    if not plugin.compatible then message(plugin, _("This KOReader build is not supported.")); return end
     local ok, err = pcall(function() util.makePath(plugin.root); Job.recover(plugin.root) end)
     if not ok then message(plugin, tostring(err)); return end
     local dialog
@@ -196,10 +186,7 @@ function Setup.show(plugin)
         plugin.setup_dialog = nil
     end
     dialog = ButtonDialog:new{
-        title = "Yomitan setup\n\nDownload a preconverted JMdict SQLite index, or select an already downloaded index ZIP. " ..
-            "No dictionary conversion runs on this device. Raw Yomitan term ZIPs are not supported. " ..
-            "Definitions come only from enabled StarDict dictionaries. Extraction and verification can be cancelled. " ..
-            "Lookup settings change only after your final confirmation.",
+        title = _("Yomitan setup") .. "\n" .. _("Download a Japanese search index. Definitions come from StarDict."),
         dismissable = false,
         buttons = {
             {{text = _("Select preconverted index ZIP"), callback = function()

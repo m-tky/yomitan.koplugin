@@ -1,7 +1,7 @@
 local _ = require("gettext")
 return {
     fullname = _("Yomitan"),
-    version = "0.1.0",
+    version = "0.1.1",
     author = "m-tky",
     url = "https://github.com/m-tky/yomitan.koplugin",
     license = "GPL-3.0-or-later",

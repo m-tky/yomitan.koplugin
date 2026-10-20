@@ -1,5 +1,4 @@
--- Bounded strict JSON reader. A bank is consumed one top-level array item at a
--- time; neither the compressed entry nor the whole decoded bank is retained.
+-- Bounded strict JSON metadata reader.
 local JSON = require("rapidjson")
 local util = require("util")
 local Parser = {}
@@ -130,29 +129,6 @@ function Parser:one()
     assert(self:peek() == "", "Trailing data after JSON value")
     self.start = nil
     return value
-end
-
-function Parser:each(callback)
-    self:bom()
-    self:space()
-    self:take("[")
-    self:space()
-    if self:peek() ~= "]" then
-        local row = 0
-        while true do
-            self.start, self.nodes = self.bytes, 0
-            local value = self:value()
-            self.start = nil
-            callback(value, row)
-            row = row + 1
-            self:space()
-            if self:peek() == "]" then break end
-            self:take(",")
-        end
-    end
-    self:take("]")
-    self:space()
-    assert(self:peek() == "", "Trailing data after JSON bank")
 end
 
 return Parser
