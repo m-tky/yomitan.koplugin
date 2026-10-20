@@ -10,8 +10,8 @@ Build permissions are read-only. The optional boolean `publish` input (default
 false) explicitly enables a separate `publish-index` job with contents-write
 permission. It creates/updates the `jmdict-latest` data release and uploads the
 ZIP/checksum with `--latest=false`, separate from semantic-version plugin releases.
-There is no scheduled or unattended dictionary publication; no publication has
-been performed during local development.
+There is no scheduled or unattended dictionary publication; publication requires
+explicit approval and a manual workflow run with `publish=true`.
 
 Input `release` accepts only `latest` or a `YYYY-MM-DD` upstream tag. It is passed
 through an environment variable and quoted argument, not interpolated into shell
@@ -137,6 +137,28 @@ indexes, test downloads/documents, dedicated settings, QA history and backup cop
 were subsequently deleted at the user's request; these results are historical,
 not evidence of a current device installation.
 
-Hosted build/publication results are recorded in the repository's Actions and
-Releases pages. Public distribution does not imply a Storefront catalog listing
-or stock-KOReader compatibility.
+## Initial public distribution verification
+
+With explicit publication approval, the standalone repository and both releases
+were published on 2026-10-20:
+
+- Plugin: [v0.1.0](https://github.com/m-tky/yomitan.koplugin/releases/tag/v0.1.0),
+  [successful release workflow](https://github.com/m-tky/yomitan.koplugin/actions/runs/39359196006).
+- Data: [jmdict-latest](https://github.com/m-tky/yomitan.koplugin/releases/tag/jmdict-latest),
+  [successful build/publish workflow](https://github.com/m-tky/yomitan.koplugin/actions/runs/39359198009).
+- Both hosted builds passed all 26 current portable tests; plugin LuaJIT source
+  compilation and data ZIP/sidecar checks also passed.
+- GitHub `/releases/latest` still resolves to `v0.1.0`, not the data release.
+- The actual plugin `Update.check`/`Update.prepare` and `Jmdict.download`/
+  `Bundle.prepare` paths were exercised from the emulator using anonymous public
+  HTTPS, not authenticated gh downloads. The plugin package validated, and the
+  downloaded 527,448-entry data package extracted and passed SQLite checks.
+- Released plugin ZIP SHA-256:
+  `46367975b66b060f18f2ef26dcebbc85da75244ec7c7b68122924ff1f8678fa1`.
+- Released data ZIP SHA-256:
+  `721e7b3e4be831f30fe61f3862462681fa81bc6eef770a25fa503a8d2da10223`
+  (48,614,725 bytes; its README reflects the current installer).
+
+No device reinstallation was performed. Public distribution does not imply an
+official Storefront catalog listing, which has not been requested, or stock-
+KOReader compatibility. The required core integration remains unpublished.

@@ -66,7 +66,7 @@ jobs:
         run: |
           if ! gh release view jmdict-latest >/dev/null 2>&1; then
             gh release create jmdict-latest --title "Preconverted JMdict index" --target "$GITHUB_SHA" --latest=false \
-              --notes "CC BY-SA 4.0 dictionary data, separately licensed from the plugin. Attribution, source provenance and licence documents are included in the ZIP."
+              --notes "JMdict data copyright James William Breen and EDRDG, under CC BY-SA 4.0 (https://www.edrdg.org/edrdg/licence.html). Original term data: https://github.com/yomidevs/jmdict-yomitan. Converted to SQLite for the experimental fork-only KOReader plugin. Data only, not a plugin release. Source provenance, original index, conversion notice, licence and documentation are included in the ZIP. Use Download/update JMdict again to obtain updated data."
           fi
           gh release edit jmdict-latest --latest=false
           gh release upload jmdict-latest dist/JMdict-ja-terms.sqlite.zip dist/JMdict-ja-terms.sqlite.zip.sha256 --clobber
