@@ -1,12 +1,16 @@
 # Yomitan search assistance for KOReader
 
 Japanese word selection and base-form/reading candidates using the pinned Yomitan
-engine. **Only enabled StarDict dictionaries supply popup definitions.** This
-plugin requires the dictionary-provider/candidate/selection hooks in
-[m-tky/koreader-tategumi](https://github.com/m-tky/koreader-tategumi); it is not a
-standalone solution for unmodified upstream KOReader. **Experimental: the required
-host integration is not yet available in a supported public KOReader build.**
-Storefront installation does not supply or patch those hooks. No MeCab is used.
+engine. **Only enabled StarDict dictionaries supply popup definitions.** Uses
+KOReader's built-in `LanguageSupport` API (`onWordSelection` and `onWordLookup`);
+no custom host hooks, monkey patches or MeCab are required. Experimental: stock
+KOReader device testing is still required. Selection correction works with
+crengine documents (including EPUB), not PDF.
+
+Disable the bundled **Japanese** plugin in Plugin Management and restart before
+using Yomitan. KOReader's language-plugin dispatch has no defined priority; running
+both can prevent Yomitan's handlers from being called. Yomitan does not overwrite
+or disable other plugins automatically.
 
 ## Setup and data updates
 
@@ -92,7 +96,7 @@ The original selected text is queried first in StarDict, followed by distinct
 headwords/readings from the longest accepted Yomitan matches. The assistant never
 uses glossary text for popup definitions. No-match preserves literal lookup, and
 missing indexes do not silently add another Japanese deinflector. Disabling the
-plugin restores the existing language-plugin route. Non-Japanese queries and
+plugin removes its language-support registration. Non-Japanese queries and
 explicitly enabled external lookup retain their normal routing.
 
 Existing StarDict enablement, per-book exclusions, HTML, links, resources,
@@ -113,6 +117,11 @@ Search guards remain 20 source codepoints by default (maximum 32), 512 query
 terms, 4,096 transformer states per input, 8,192 matched states and 4,096 exact
 rows per stage. Candidate handoff is limited to 512 candidates/64 KiB and falls
 back to the literal query rather than sending a partial candidate set.
+
+Enablement is stored in `yomitan_enabled`, independently of the dictionary
+provider. Existing `dictionary_provider = "yomitan"` installations migrate on
+startup; other provider choices are left untouched. Setup, background verification
+and shutdown work in both ReaderUI and FileManager.
 
 ## Plugin code updates
 
@@ -149,6 +158,9 @@ synthetic words and is not a general-purpose lexicon.
 
 ```sh
 python3 -m unittest discover -s tools/tests -v
+luajit tools/tests/language_support_test.lua
+# Optionally exercise a KOReader checkout's actual language-plugin dispatcher:
+luajit tools/tests/language_support_test.lua ../koreader
 python3 tools/build-jmdict-index.py --release latest --output dist/JMdict-ja-terms.sqlite.zip
 SDL_VIDEODRIVER=dummy nix develop --command ./kodev test front -f 'Yomitan'
 ```

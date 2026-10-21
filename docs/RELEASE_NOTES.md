@@ -1,3 +1,19 @@
+## v0.1.2
+
+- Replaced fork-only dictionary-provider hooks with KOReader's built-in
+  language-support API. No KOReader core changes or monkey patches are needed.
+- Migrated legacy Yomitan enablement to an independent `yomitan_enabled` setting.
+- Kept StarDict definitions, setup, background verification and safe shutdown.
+- Disable the bundled Japanese plugin and restart before enabling Yomitan;
+  language-plugin priority is undefined. Selection correction is crengine-only.
+- Language-support contract tests (including KOReader's actual dispatcher), all
+  26 portable tooling tests, and LuaJIT source-syntax checks passed.
+- Stock-device end-to-end validation is still pending.
+
+Install `yomitan.koplugin.zip` under KOReader's `plugins/` directory and restart.
+Keep StarDict dictionaries installed and enabled; Yomitan provides search
+assistance, not popup definitions. No index rebuild or download is required.
+
 ## v0.1.1
 
 - Shorter setup, activation, progress and update messages; detailed information
@@ -11,7 +27,7 @@ Existing index files remain compatible. No dictionary rebuild or download is
 required for this update. Runtime regression tests (89) and portable tooling tests
 (26) passed before publication.
 
-### Compatibility
+### Historical compatibility (v0.1.1 only)
 
 **Experimental and not compatible with stock KOReader.** Requires custom
 provider/candidate/selection hooks that are not yet available in a supported public

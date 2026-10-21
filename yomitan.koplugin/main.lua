@@ -2,6 +2,7 @@ local Automatic = require("yomitan/automatic")
 local ButtonDialog = require("ui/widget/buttondialog")
 local Catalog = require("yomitan/catalog")
 local DataStorage = require("datastorage")
+local LanguageSupport = require("languagesupport")
 local Search = require("yomitan/search")
 local Setup = require("yomitan/setup")
 local UIManager = require("ui/uimanager")
@@ -12,7 +13,7 @@ local _ = require("gettext")
 local Yomitan = WidgetContainer:extend{
     name = "yomitan",
     display_name = "Yomitan",
-    provider_id = "yomitan", -- ReaderUI rewrites module.name after initialization.
+    pretty_name = "Yomitan",
     is_doc_only = false,
 }
 
@@ -20,8 +21,24 @@ function Yomitan:init()
     self.setup_closed = false
     self.root = DataStorage:getDataDir() .. "/data/yomitan"
     Catalog.enablePersistentVerification(self.root)
-    self.compatible = self.ui and self.ui.dictionary and self.ui.dictionary.registerLookupProvider ~= nil
-    if self.compatible then self.ui.dictionary:registerLookupProvider(self.provider_id, self) end
+    self.compatible = type(LanguageSupport.registerPlugin) == "function"
+    -- Migrate the old fork-only setting without changing another provider.
+    if G_reader_settings:readSetting("yomitan_enabled") == nil then
+        G_reader_settings:saveSetting("yomitan_enabled",
+            G_reader_settings:readSetting("dictionary_provider") == "yomitan")
+    end
+    if G_reader_settings:readSetting("dictionary_provider") == "yomitan" then
+        G_reader_settings:delSetting("dictionary_provider")
+    end
+    -- ReaderUI rewrites module.name; register a stable adapter instead of self.
+    local plugin = self
+    self.language_plugin = {
+        name = "yomitan", pretty_name = "Yomitan",
+        supportsLanguage = function(_, code) return code == "ja" or code == "jpn" end,
+        onWordLookup = function(_, args) return plugin:onWordLookup(args) end,
+        onWordSelection = function(_, args) return plugin:onWordSelection(args) end,
+    }
+    self:updateLanguageRegistration()
     if self.ui and self.ui.menu then self.ui.menu:registerToMainMenu(self) end
     if self.compatible and not self.ui.document and self.ui.registerPostInitCallback then
         self.ui:registerPostInitCallback(function()
@@ -31,6 +48,34 @@ function Yomitan:init()
             end
             UIManager:nextTick(self.setup_scheduled)
         end)
+    end
+end
+
+function Yomitan:isEnabled()
+    return not self.setup_closed and G_reader_settings:isTrue("yomitan_enabled")
+end
+
+function Yomitan:updateLanguageRegistration()
+    if self.compatible and self:isEnabled() then
+        LanguageSupport:registerPlugin(self.language_plugin)
+    elseif LanguageSupport.plugins.yomitan == self.language_plugin then
+        -- The registry is shared by FileManager and ReaderUI. Do not remove a
+        -- newer instance's registration when the previous UI closes.
+        LanguageSupport.plugins.yomitan = nil
+    end
+end
+
+function Yomitan:setEnabled(enabled)
+    G_reader_settings:saveSetting("yomitan_enabled", enabled)
+    self:updateLanguageRegistration()
+    if enabled then self:warnLanguageConflict() end
+end
+
+function Yomitan:warnLanguageConflict()
+    if self:isEnabled() and LanguageSupport.plugins.japanese then
+        UIManager:show(require("ui/widget/infomessage"):new{
+            text = _("Disable the Japanese plugin in Plugin Management and restart KOReader to use Yomitan. Language plugins have no defined priority."),
+        })
     end
 end
 
@@ -64,19 +109,16 @@ function Yomitan:closeDatabases()
     self.databases = nil
 end
 
--- Search assistance only: definition popups always belong to StarDict.
-function Yomitan:lookup()
-    return {status = "declined"}
-end
-
 function Yomitan:getLookupCandidates(word)
     if not util.hasCJKChar(word) then return nil end
     local result = Search.find(word, self:getDatabases())
-    local candidates, seen = {}, {[word] = true}
+    local candidates, seen, bytes = {}, {[word] = true}, 0
     for _, hit in ipairs(result.entries) do
         if hit.state.length == result.originalTextLength then
             for _, key in ipairs({hit.entry.term, hit.entry.reading}) do
                 if key ~= "" and not seen[key] then
+                    bytes = bytes + #key
+                    if #candidates >= 512 or bytes > 65536 then return nil end
                     candidates[#candidates + 1], seen[key] = key, true
                 end
             end
@@ -85,12 +127,20 @@ function Yomitan:getLookupCandidates(word)
     return candidates
 end
 
-function Yomitan:improveSelection(args)
-    if args.text ~= "" and not util.hasCJKChar(args.text) then return {status = "declined"} end
-    return {status = "handled", range = Search.select(args, self:getDatabases())}
+-- LanguageSupport owns selection updates and StarDict definition popups.
+function Yomitan:onWordLookup(args)
+    if not self:isEnabled() or self.setup_job then return end
+    return self:getLookupCandidates(args.text)
+end
+
+function Yomitan:onWordSelection(args)
+    if not self:isEnabled() or self.setup_job then return end
+    if args.text ~= "" and not util.hasCJKChar(args.text) then return end
+    return Search.select(args, self:getDatabases())
 end
 
 function Yomitan:onReaderReady()
+    self:warnLanguageConflict()
     if self.compatible then
         Setup.recover(self)
         Automatic.start(self)
@@ -100,11 +150,11 @@ end
 
 function Yomitan:onCloseDocument()
     Setup.close(self)
-    if self.compatible then self.ui.dictionary:unregisterLookupProvider(self.provider_id) end
+    self:updateLanguageRegistration()
     self:closeDatabases()
 end
 
--- FileManager has no CloseDocument event; release its provider/workers too.
+-- FileManager has no CloseDocument event; release its registration/workers too.
 function Yomitan:onCloseWidget()
     self:onCloseDocument()
 end
@@ -155,13 +205,13 @@ function Yomitan:addToMainMenu(menu_items)
         sub_item_table = {
             {
                 text = _("Enabled"), enabled = not not self.compatible,
-                checked_func = function() return G_reader_settings:readSetting("dictionary_provider") == self.provider_id end,
+                checked_func = function() return self:isEnabled() end,
                 callback = function()
-                    if G_reader_settings:readSetting("dictionary_provider") == self.provider_id then
-                        G_reader_settings:delSetting("dictionary_provider")
+                    if self:isEnabled() then
+                        self:setEnabled(false)
                         if self.automatic_verifying and self.setup_job then self.setup_job:cancel(true) end
                     else
-                        G_reader_settings:saveSetting("dictionary_provider", self.provider_id)
+                        self:setEnabled(true)
                         self.automatic_failed = nil
                         Automatic.start(self)
                         if #self:selectedIds(Catalog.scan(self.root)) == 0 then Setup.show(self) end

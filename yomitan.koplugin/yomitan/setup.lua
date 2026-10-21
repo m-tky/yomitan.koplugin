@@ -39,7 +39,7 @@ function Setup.complete(plugin, ids)
     plugin.automatic_failed = nil
     plugin:closeDatabases()
     G_reader_settings:saveSetting("yomitan_dictionary_ids", ids)
-    G_reader_settings:saveSetting("dictionary_provider", plugin.provider_id)
+    plugin:setEnabled(true)
     if G_reader_settings:isTrue("external_dict_lookup") then G_reader_settings:saveSetting("external_dict_lookup", false) end
     G_reader_settings:saveSetting("yomitan_setup_version", 1)
     G_reader_settings:delSetting("yomitan_setup_deferred")

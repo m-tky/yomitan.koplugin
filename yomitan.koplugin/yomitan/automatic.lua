@@ -27,14 +27,14 @@ function Automatic.select(catalog, configured)
 end
 
 local function notice(plugin, text)
-    if not plugin.setup_closed and G_reader_settings:readSetting("dictionary_provider") == plugin.provider_id then
+    if plugin:isEnabled() then
         UIManager:show(InfoMessage:new{text = text, timeout = 3})
     end
 end
 
 function Automatic.start(plugin)
     if plugin.setup_closed or plugin.setup_job or plugin.automatic_disabled
-            or G_reader_settings:readSetting("dictionary_provider") ~= plugin.provider_id then return end
+            or not plugin:isEnabled() then return end
     Catalog.enablePersistentVerification(plugin.root)
     local catalog, by_id = Catalog.scan(plugin.root), {}
     for _, item in ipairs(catalog) do by_id[item.id] = item end

@@ -2,10 +2,11 @@
 
 ## Compatibility and licensing
 
-This is an experimental standalone plugin for custom KOReader provider/candidate/
-selection hooks. Stock KOReader is not supported, and the required integration is
-not yet available in a supported public build. Every release must keep this
-warning prominent. A release ZIP never patches KOReader core files.
+This experimental standalone plugin uses KOReader's built-in language-support
+API and does not require custom core hooks. Test on unmodified KOReader before
+releasing. Disable the bundled Japanese plugin and restart during testing;
+language-plugin priority is undefined. Selection correction is crengine-only.
+A release ZIP never patches KOReader core files.
 
 The plugin is GPL-3.0-or-later. Its generated transform data and ports retain
 Yomitan/Yomichan notices and pinned provenance. JMdict data is CC BY-SA 4.0 and

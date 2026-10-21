@@ -3,11 +3,11 @@
 Japanese word selection and base-form/reading candidates using the pinned Yomitan
 engine. **Popup definitions come only from enabled StarDict dictionaries.**
 
-> **Experimental, fork-only integration. Not compatible with stock KOReader.**
-> Requires the dictionary-provider/candidate/selection hooks developed in
-> [m-tky/koreader-tategumi](https://github.com/m-tky/koreader-tategumi).
-> These hooks are not yet available in a supported public KOReader build.
-> Installing this plugin through Storefront does not install or patch those hooks.
+> Uses KOReader's built-in language-support API; no custom host hooks or core
+> patches are required. Experimental: device testing is still required.
+> Disable the bundled **Japanese** plugin in Plugin Management and restart before
+> enabling Yomitan: KOReader does not define priority between language plugins.
+> Selection correction supports crengine documents (including EPUB), not PDF.
 
 ## Install
 

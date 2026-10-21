@@ -25,6 +25,8 @@ jobs:
           find yomitan.koplugin -name '*.lua' -print0 | while IFS= read -r -d '' file; do
             luajit -b "$file" /tmp/yomitan-source.luac
           done
+      - name: Test language-support integration contract
+        run: luajit tools/tests/language_support_test.lua
       - name: Build reproducible plugin ZIP
         shell: bash
         run: |

@@ -64,7 +64,10 @@ class PackageTests(unittest.TestCase):
                 licence = archive.read("yomitan.koplugin/LICENSE").decode()
                 self.assertIn("GNU GENERAL PUBLIC LICENSE", licence)
                 self.assertNotIn("GNU AFFERO GENERAL", licence)
-                self.assertIn("supported public KOReader build", archive.read("yomitan.koplugin/README.md").decode())
+                readme = archive.read("yomitan.koplugin/README.md").decode()
+                self.assertIn("built-in `LanguageSupport` API", readme)
+                self.assertIn("Disable the bundled **Japanese** plugin", readme)
+                self.assertNotIn("not a\nstandalone solution", readme)
 
     def test_preconverted_installer_replaces_device_converter(self):
         importer = (SOURCE / "yomitan/importer.lua").read_text()

@@ -5,11 +5,13 @@
 - Repository: https://github.com/m-tky/yomitan.koplugin
 - Plugin folder/ID: `yomitan.koplugin` / `yomitan`.
 - `_meta.lua` provides a literal stable semantic `version`, `author`, GitHub `url`,
-  GPL licence and a description stating the custom host-hook requirement.
+  GPL licence and a description stating the language-plugin compatibility boundary.
 - Plugin tags: `v<version>` matching `_meta.lua`.
 - Plugin asset: `yomitan.koplugin.zip`, containing exactly one plugin folder.
 - The ZIP includes all runtime modules, transform data, README and GPL licence,
-  plus `plugin.json` with the version, required provider API and per-file hashes.
+  plus `plugin.json` with the version and per-file hashes. The legacy
+  `provider_api = 1` package-format marker is retained for updater compatibility;
+  it no longer indicates a dependency on custom KOReader hooks.
 - A SHA-256 sidecar and GitHub asset digest support integrity checks.
 - `jmdict-latest` is a **data-only** release, never the latest plugin release.
   Do not select its SQLite ZIP as a plugin archive.
@@ -18,14 +20,11 @@
 
 ## Compatibility boundary
 
-**Experimental and not compatible with stock KOReader.** The provider, candidate
-and selection hooks are required in the host before lookup assistance can work.
-These integration hooks are not yet available in a supported public KOReader
-build. The updater and Storefront package never install or patch core hooks.
-A safe refusal to enable on an incompatible host is not proof of compatibility.
-
-This initial release is for integration testing. Do not promote it as a generally
-usable stock-KOReader plugin until the required host integration is published.
+Uses KOReader's built-in language-support API; no custom provider, candidate or
+selection hooks are needed. The updater and Storefront package never patch core
+files. Disable the bundled Japanese plugin and restart before enabling Yomitan;
+language-plugin priority is undefined. Selection correction supports crengine
+documents, not PDF. Stock-device end-to-end validation remains necessary.
 Storefront itself is not bundled, installed or replaced by this project.
 
 ## Catalog status and manual installation
